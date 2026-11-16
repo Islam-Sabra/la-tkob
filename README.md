@@ -1,20 +1,23 @@
-# Don't Spill the Tea
+# Motion Party
 
-A phone game (iPhone + Android) that measures how steady your hand is using the phone's motion sensors.
+Phone games you play with your whole body. The phone's sensors check every step, turn, jump and squat.
 
 Play: https://islam-sabra.github.io/la-tkob/
 
-- `index.html` — the whole game (HTML/JS). Must be served over HTTPS for sensors to work.
-- `supabase/functions/coach/` — optional AI coach powered by Claude.
+## Games
+- **Don't Spill the Tea**: carry a full glass through real-life scenes (walk, turn, squat) without spilling.
+- **Simon Says**: do the move only when Simon says. The phone verifies each move.
+- **Waiter Rush**: a tray of three teas through an obstacle course, timed.
 
-## Sensors used
-Gyroscope (tremor, turning), accelerometer (steps, bumps, drops), gravity (tilt, face-down), microphone (loud noise), touch, leaving the app. Output: synthesized sound effects and vibration.
+Plus Party mode (pass the phone) and a Sensor Lab for tuning detection on a real device.
 
-## Desktop testing
-Open `index.html`: mouse demo mode (move = tremor, click = step, scroll = loud noise). Tap the title 5 times to show live sensor readings.
+## Code
+- `js/core.js`: movement engine (step, jump, down/up, turn, shake, flip, stillness), sound effects, glass renderer, steadiness analysis.
+- `js/games.js`: characters, command runner, the three games and their levels.
+- `js/app.js`: hub, play loop, results, party mode, Sensor Lab.
+- `supabase/functions/coach/`: optional AI coach (Claude).
+
+Sensors need HTTPS. On desktop the game runs in demo mode: W step, J jump, S squat, U up, T turn, K shake, F flip, mouse = hand shake.
 
 ## App stores
-Wrap the same code with Capacitor:
-npm i @capacitor/core @capacitor/cli @capacitor/ios @capacitor/android
-npx cap init "Don't Spill the Tea" com.latkob.app --web-dir .
-npx cap add ios && npx cap add android
+Wrap with Capacitor: `npx cap init "Motion Party" com.motionparty.app --web-dir .` then `npx cap add ios` / `android`.
