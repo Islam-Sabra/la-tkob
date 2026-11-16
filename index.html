@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0f1d24">
+<title>لا تكب الشاي</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lalezar&family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one-screen app, stacked "screens" toggled by .on; canvas glass is the hero. Night-diwaniya palette. */
+:root{
+  --night:#0f1d24;
+  --night-2:#172b35;
+  --ink:#f3ead8;
+  --muted:#9fb3b8;
+  --tea:#c4521c;
+  --tea-light:#e8873a;
+  --gold:#e3b04b;
+  --good:#5fbf8f;
+  --bad:#e0604f;
+  --display:"Lalezar","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --body:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{
+  background:radial-gradient(120% 80% at 50% 0%,var(--night-2) 0%,var(--night) 60%);
+  background-color:var(--night);
+  color:var(--ink);font-family:var(--body);
+  overflow:hidden;user-select:none;-webkit-user-select:none;
+}
+.app{height:100%;display:flex;flex-direction:column;
+  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+  max-width:520px;margin:0 auto}
+.screen{display:none;flex:1;flex-direction:column;gap:14px;min-height:0}
+.screen.on{display:flex}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(40px,12vw,60px);line-height:1;margin:8px 0 0;color:var(--gold);text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:30px;margin:0;line-height:1.1;text-wrap:balance}
+p{margin:0;line-height:1.6}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.grow{flex:1;min-height:0}
+canvas{width:100%;height:100%;display:block}
+.stage{flex:1;min-height:200px;position:relative}
+.btn{appearance:none;border:0;border-radius:16px;padding:16px 20px;font:700 19px var(--body);
+  background:var(--gold);color:#2a1a05;cursor:pointer;width:100%}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid #ffffff2e}
+.btn:active{transform:scale(.98)}
+.btn:focus-visible,input:focus-visible{outline:3px solid var(--tea-light);outline-offset:2px}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.hud{display:flex;justify-content:space-between;align-items:center;font-variant-numeric:tabular-nums}
+.timer{font-family:var(--display);font-size:44px;color:var(--gold);line-height:1}
+.spillbar{height:10px;border-radius:6px;background:#ffffff14;overflow:hidden;flex:1;margin-inline-start:16px}
+.spillbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--tea-light),var(--bad));transition:width .1s}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.count{font-family:var(--display);font-size:120px;color:var(--gold);text-shadow:0 6px 30px #0008}
+.warn{background:#e0604f22;border:1px solid #e0604f66;color:#ffd9d3;border-radius:12px;padding:10px 12px;font-size:15px}
+.bigscore{font-family:var(--display);font-size:96px;line-height:.9;color:var(--gold);font-variant-numeric:tabular-nums}
+.title-tag{display:inline-block;background:var(--tea);color:#fff;border-radius:999px;padding:4px 14px;font-weight:700}
+.card{background:#ffffff0d;border:1px solid #ffffff14;border-radius:16px;padding:14px}
+.scroll{overflow-y:auto;min-height:0;flex:1;display:flex;flex-direction:column;gap:12px;padding-bottom:4px}
+.meter{display:grid;grid-template-columns:88px 1fr 36px;align-items:center;gap:10px;font-size:15px}
+.meter .bar{height:8px;border-radius:6px;background:#ffffff14;overflow:hidden}
+.meter .bar i{display:block;height:100%;border-radius:6px}
+.meter b{font-variant-numeric:tabular-nums;text-align:left}
+.meter.weak span{color:var(--tea-light);font-weight:700}
+.coach h3{margin:0 0 6px;font-size:16px;color:var(--gold)}
+.coach ul{margin:6px 0 0;padding-inline-start:18px;line-height:1.7}
+.tag-ai{font-size:12px;color:var(--muted);border:1px solid #ffffff22;border-radius:999px;padding:1px 8px;margin-inline-start:6px;font-weight:400}
+input[type=text]{width:100%;background:#ffffff10;border:1.5px solid #ffffff22;border-radius:12px;color:var(--ink);font:600 17px var(--body);padding:12px}
+.players{display:flex;flex-direction:column;gap:8px}
+.chip{display:flex;justify-content:space-between;align-items:center;background:#ffffff0d;border-radius:12px;padding:10px 12px}
+.chip button{background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer}
+.board li{display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid #ffffff12;font-variant-numeric:tabular-nums}
+.board ol{list-style:none;margin:0;padding:0}
+.board li.last{color:var(--bad)}
+.challenge{background:linear-gradient(90deg,#c4521c33,#e3b04b22);border:1px solid #e3b04b55;border-radius:14px;padding:10px 12px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:10px;font-size:15px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+.bubble{position:absolute;top:4px;inset-inline:0;display:flex;gap:10px;align-items:flex-start;background:#f3ead8;color:#1d1408;border-radius:16px;padding:10px 12px;box-shadow:0 8px 24px #0006;animation:pop .18s ease-out}
+.bubble b{font-size:13px;color:#7a2a0b}
+.bubble p{font-size:17px;font-weight:600;line-height:1.4}
+.av{flex:0 0 44px;width:44px;height:44px}
+.av svg,.avs svg{width:100%;height:100%;display:block}
+.avs{width:56px;height:56px}
+.story{display:flex;gap:12px;align-items:center;text-align:start;cursor:pointer;width:100%;color:var(--ink);font:inherit}
+.story h3{margin:0;font-size:18px}
+.story p{font-size:14px;color:var(--muted)}
+.story .stars{color:var(--gold);font-size:14px;margin-top:2px}
+@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.bubble{animation:none}}
+#debug{position:fixed;top:8px;left:8px;font:12px ui-monospace,monospace;background:#000a;padding:6px 8px;border-radius:6px;direction:ltr;display:none;white-space:pre}
+@media (prefers-reduced-motion:reduce){.btn:active{transform:none}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HOME -->
+  <section class="screen on" id="s-home">
+    <h1 id="logo">لا تكب الشاي</h1>
+    <p class="muted">امسك الموبايل مفرود، الاستكانة مليانة لآخرها. 15 ثانية من غير ما تكبها.</p>
+    <div id="challengeBox" class="challenge" hidden></div>
+    <div class="stage"><canvas id="homeCanvas"></canvas></div>
+    <p class="small muted" id="bestLine"></p>
+    <button class="btn" id="btnStory">القصص (شخصيات ومواقف)</button>
+    <button class="btn ghost" id="btnSolo">التحدي الكلاسيكي (15 ثانية)</button>
+    <button class="btn ghost" id="btnParty">مود الديوانية (موبايل واحد يلف)</button>
+  </section>
+
+  <!-- PARTY SETUP -->
+  <section class="screen" id="s-party">
+    <h2>مين بيلعب؟</h2>
+    <p class="muted small">الموبايل يلف على الكل. الخسران يصب الشاي للقعدة.</p>
+    <div class="row">
+      <input type="text" id="playerName" placeholder="اكتب الاسم" maxlength="16" autocomplete="off">
+      <button class="btn" style="flex:0 0 90px" id="btnAdd">ضيف</button>
+    </div>
+    <div class="players scroll" id="playerList"></div>
+    <button class="btn" id="btnPartyStart" disabled>ابدأ</button>
+    <button class="btn ghost" data-go="s-home">رجوع</button>
+  </section>
+
+  <!-- STORY PICKER -->
+  <section class="screen" id="s-stories">
+    <h2>اختار الموقف</h2>
+    <p class="muted small">الشخصيات بتحس بمشيك وهزّة إيدك وصوتك ولمسك للشاشة، وبترد عليك.</p>
+    <div class="scroll" id="storyList"></div>
+    <label class="chip" for="voiceToggle" style="cursor:pointer"><span>الشخصيات تتكلم بصوت</span><input type="checkbox" id="voiceToggle" checked style="width:22px;height:22px"></label>
+    <button class="btn ghost" data-go="s-home">رجوع</button>
+  </section>
+
+  <!-- STORY INTRO -->
+  <section class="screen" id="s-intro">
+    <div class="grow"></div>
+    <div id="introAvatars" style="display:flex;gap:10px"></div>
+    <h2 id="introTitle"></h2>
+    <p id="introText"></p>
+    <div class="card small" id="introRules"></div>
+    <div class="grow"></div>
+    <button class="btn" id="btnIntroGo">يلا</button>
+    <button class="btn ghost" data-go="s-stories">رجوع</button>
+  </section>
+
+  <!-- TURN HANDOFF -->
+  <section class="screen" id="s-turn">
+    <div class="grow"></div>
+    <p class="muted">الدور على</p>
+    <h1 id="turnName"></h1>
+    <p class="muted">خد الموبايل وامسكه مفرود قدامك</p>
+    <div class="grow"></div>
+    <button class="btn" id="btnTurnGo">جاهز</button>
+  </section>
+
+  <!-- PLAY -->
+  <section class="screen" id="s-play">
+    <div class="hud">
+      <div class="timer" id="timer">15.0</div>
+      <div class="spillbar" title="كمية الشاي اللي اتكبت"><i id="spillFill"></i></div>
+    </div>
+    <div id="playWarn" class="warn" hidden></div>
+    <div id="goalLine" class="small muted" hidden></div>
+    <div class="stage">
+      <canvas id="playCanvas"></canvas>
+      <div class="overlay"><div class="count" id="count"></div></div>
+      <div class="bubble" id="bubble" hidden><div class="av" id="bubbleAv"></div><div><b id="bubbleName"></b><p id="bubbleText"></p></div></div>
+    </div>
+    <p class="small muted" id="playHint" style="text-align:center">بص على حافة الاستكانة، وخد نفس هادي</p>
+  </section>
+
+  <!-- RESULT -->
+  <section class="screen" id="s-result">
+    <div class="scroll">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
+        <div>
+          <p class="muted small" id="resWho"></p>
+          <div class="bigscore" id="resScore">0</div>
+        </div>
+        <span class="title-tag" id="resTitle"></span>
+      </div>
+      <p id="resLine"></p>
+      <div id="resWarn" class="warn" hidden></div>
+
+      <div class="card">
+        <h3 style="margin:0 0 10px;font-size:16px">تقييمك بالتفصيل</h3>
+        <div id="meters" style="display:flex;flex-direction:column;gap:10px"></div>
+        <p class="small muted" id="tremorLine" style="margin-top:10px"></p>
+      </div>
+
+      <div class="card coach" id="coachCard">
+        <h3>المدرب <span class="tag-ai" id="coachSrc">تحليل على جهازك</span></h3>
+        <p id="coachText"></p>
+        <ul id="coachTips"></ul>
+      </div>
+      <p class="small muted">التحليل ده للعب والتدريب بس، ومش تشخيص طبي.</p>
+    </div>
+    <div class="row">
+      <button class="btn" id="btnShare">تحدّى صاحبك</button>
+      <button class="btn ghost" id="btnAgain">تاني</button>
+    </div>
+    <button class="btn ghost" id="btnNextTurn" hidden>اللي بعده</button>
+    <button class="btn ghost" id="btnHome">الرئيسية</button>
+  </section>
+
+  <!-- PARTY BOARD -->
+  <section class="screen" id="s-board">
+    <h2>الترتيب</h2>
+    <div class="card board scroll"><ol id="boardList"></ol></div>
+    <p id="loserLine" style="font-size:18px"></p>
+    <button class="btn" id="btnRematch">جولة كمان</button>
+    <button class="btn ghost" data-go="s-home">الرئيسية</button>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+<div id="debug"></div>
+
+<script>
+"use strict";
+/* ================= CONFIG ================= */
+const CFG = {
+  ROUND_SEC: 15,
+  COUNTDOWN: 3,
+  // Optional AI coach endpoint (Supabase edge function). Empty = local coach only.
+  AI_ENDPOINT: "",
+  JITTER_K: 6,          // score = 100*exp(-meanJitter/K)
+  TABLE_MEAN: 0.12,     // below this mean jitter for the whole round = phone on a table
+  TABLE_MAX: 0.6,
+};
+
+/* ================= HELPERS ================= */
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+const store = {
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id)); if(id==="s-home") refreshHome();}
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),2200);}
+document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>show(b.dataset.go));
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+
+/* ================= GLASS RENDERER ================= */
+// Istikana (tulip glass) on a saucer. Units: s = glass half-height in px.
+function makeGlass(canvas){
+  const ctx = canvas.getContext("2d");
+  const st = {theta:0, amp:0, phase:0, level:-0.86, spill:0, drops:[]};
+  function size(){
+    const r = canvas.getBoundingClientRect(), d = window.devicePixelRatio||1;
+    canvas.width = Math.max(1,r.width*d); canvas.height = Math.max(1,r.height*d);
+    ctx.setTransform(d,0,0,d,0,0); return r;
+  }
+  let rect = size();
+  window.addEventListener("resize",()=>rect=size());
+  // right-side profile points (x half-width, y) from rim to base, y in [-1,1]
+  function profile(path, s, cx, cy, side){
+    const X = x => cx + side*x*s, Y = y => cy + y*s;
+    path.moveTo(X(0.0),Y(-1)); path.lineTo(X(0.56),Y(-1));
+    path.bezierCurveTo(X(0.56),Y(-0.55),X(0.34),Y(-0.25),X(0.36),Y(0.15));
+    path.bezierCurveTo(X(0.38),Y(0.55),X(0.52),Y(0.6),X(0.46),Y(0.86));
+    path.quadraticCurveTo(X(0.42),Y(1),X(0.0),Y(1));
+  }
+  function glassPath(s,cx,cy,inset){
+    const p = new Path2D(); const k = 1-inset;
+    const X = x => cx + x*s*k, Y = y => cy + y*s*(1-inset*0.5);
+    p.moveTo(X(-0.56),Y(-1)); p.lineTo(X(0.56),Y(-1));
+    p.bezierCurveTo(X(0.56),Y(-0.55),X(0.34),Y(-0.25),X(0.36),Y(0.15));
+    p.bezierCurveTo(X(0.38),Y(0.55),X(0.52),Y(0.6),X(0.46),Y(0.86));
+    p.quadraticCurveTo(X(0.42),Y(1),X(0),Y(1));
+    p.quadraticCurveTo(X(-0.42),Y(1),X(-0.46),Y(0.86));
+    p.bezierCurveTo(X(-0.52),Y(0.6),X(-0.38),Y(0.55),X(-0.36),Y(0.15));
+    p.bezierCurveTo(X(-0.34),Y(-0.25),X(-0.56),Y(-0.55),X(-0.56),Y(-1));
+    p.closePath(); return p;
+  }
+  function draw(dt){
+    const w = rect.width, h = rect.height;
+    ctx.clearRect(0,0,w,h);
+    const s = Math.min(h*0.40, w*0.62);
+    const cx = w/2, cy = h*0.46;
+    st.phase += dt*7;
+    // saucer
+    ctx.save();
+    ctx.fillStyle="#ffffff10"; ctx.beginPath(); ctx.ellipse(cx,cy+s*1.08,s*0.95,s*0.16,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#e3b04b88"; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(cx,cy+s*1.08,s*0.95,s*0.16,0,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+    // spilled puddle on saucer
+    if(st.spill>0.01){
+      ctx.fillStyle="#c4521caa"; ctx.beginPath();
+      ctx.ellipse(cx,cy+s*1.1,s*0.95*Math.min(1,0.3+st.spill),s*0.12*Math.min(1,0.3+st.spill),0,0,Math.PI*2); ctx.fill();
+    }
+    // tea inside glass (clip)
+    const inner = glassPath(s,cx,cy,0.05);
+    ctx.save(); ctx.clip(inner);
+    const level = st.level + st.spill*0.38;
+    const tan = Math.tan(st.theta);
+    ctx.beginPath();
+    const left = cx - s*0.7, right = cx + s*0.7;
+    ctx.moveTo(left, cy + s*1.2);
+    for(let x=left; x<=right+1; x+=4){
+      const u = (x-cx)/s;
+      const y = level - u*tan + st.amp*Math.sin(u*9 + st.phase) + st.amp*0.5*Math.sin(u*17 - st.phase*1.3);
+      ctx.lineTo(x, cy + y*s);
+    }
+    ctx.lineTo(right, cy + s*1.2); ctx.closePath();
+    const g = ctx.createLinearGradient(0,cy-s,0,cy+s);
+    g.addColorStop(0,"#e8873a"); g.addColorStop(0.5,"#c4521c"); g.addColorStop(1,"#7a2a0b");
+    ctx.fillStyle=g; ctx.fill();
+    ctx.restore();
+    // glass outline + shine
+    const outer = glassPath(s,cx,cy,0);
+    ctx.strokeStyle="#f3ead8cc"; ctx.lineWidth=2.5; ctx.stroke(outer);
+    ctx.fillStyle="#ffffff0c"; ctx.fill(outer);
+    ctx.strokeStyle="#ffffff55"; ctx.lineWidth=3; ctx.beginPath();
+    ctx.moveTo(cx-s*0.40,cy-s*0.85); ctx.quadraticCurveTo(cx-s*0.28,cy-s*0.4,cx-s*0.26,cy-s*0.05); ctx.stroke();
+    // gold rim band
+    ctx.strokeStyle="#e3b04b"; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(cx-s*0.56,cy-s*0.96); ctx.lineTo(cx+s*0.56,cy-s*0.96); ctx.stroke();
+    // drops
+    ctx.fillStyle="#d5642a";
+    st.drops = st.drops.filter(d=>{ d.vy += 1800*dt; d.x += d.vx*dt; d.y += d.vy*dt;
+      ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,Math.PI*2); ctx.fill(); return d.y < cy+s*1.1; });
+    return {s,cx,cy};
+  }
+  function spawnDrop(side){
+    const s = Math.min(rect.height*0.40, rect.width*0.62), cx=rect.width/2, cy=rect.height*0.46;
+    st.drops.push({x:cx+side*s*0.56, y:cy-s*0.98, vx:side*(60+Math.random()*90), vy:-80-Math.random()*60, r:2+Math.random()*3});
+  }
+  return {st, draw, spawnDrop, resize:()=>rect=size()};
+}
+
+/* ================= SENSORS ================= */
+const sensor = {rr:0, acc:0, roll:0, got:false, mouse:false, last:0};
+function onMotion(e){
+  const r = e.rotationRate || {}; const a = e.acceleration || {}; const g = e.accelerationIncludingGravity || {};
+  const rr = Math.hypot(r.alpha||0, r.beta||0, r.gamma||0);          // deg/s
+  const acc = Math.hypot(a.x||0, a.y||0, a.z||0);                     // m/s^2 (no gravity)
+  let gx = g.x||0, gz = g.z||0; if(isIOS){ gx = -gx; gz = -gz; }      // iOS reports inverted signs
+  const roll = Math.atan2(gx, Math.abs(gz)+1e-6);                     // rad, sideways tilt
+  const now = performance.now(), dt = sensor.last ? Math.min(0.1,(now-sensor.last)/1000) : 0.016;
+  sensor.rr = rr; sensor.acc = acc; sensor.roll = roll; sensor.got = true; sensor.last = now;
+  sensor.gz = gz; sensor.gMag = Math.hypot(g.x||0,g.y||0,g.z||0);
+  sensor.yaw += (r.alpha||0)*dt;                                       // deg, turning around
+  detectStep(acc, now);
+}
+// Step detector: peaks in linear acceleration with a refractory window
+Object.assign(sensor,{gz:9.8,gMag:9.8,yaw:0,steps:0,lastStep:0,above:false,mic:0,touches:0});
+function detectStep(acc, now){
+  if(!sensor.above && acc>1.3 && now-sensor.lastStep>280){ sensor.above=true; sensor.steps++; sensor.lastStep=now; }
+  else if(sensor.above && acc<0.6) sensor.above=false;
+}
+// Microphone loudness (only for stories that need it)
+let micStream=null, micAn=null, micBuf=null;
+async function enableMic(){
+  if(micAn) return true;
+  try{
+    micStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false}});
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    const src = ac.createMediaStreamSource(micStream); micAn = ac.createAnalyser(); micAn.fftSize=1024;
+    micBuf = new Float32Array(micAn.fftSize); src.connect(micAn); return true;
+  }catch(e){ return false; }
+}
+function readMic(){
+  if(!micAn) return 0; micAn.getFloatTimeDomainData(micBuf);
+  let s=0; for(let i=0;i<micBuf.length;i++) s+=micBuf[i]*micBuf[i];
+  sensor.mic = Math.sqrt(s/micBuf.length); return sensor.mic;
+}
+// Touches on the play screen and leaving the app
+$("s-play").addEventListener("touchstart",e=>{sensor.touches=e.touches.length; if(game&&game.story) game.ev.touch=true;},{passive:true});
+$("s-play").addEventListener("touchend",e=>{sensor.touches=e.touches.length},{passive:true});
+document.addEventListener("visibilitychange",()=>{ if(document.hidden && game && !game.ended && game.story) game.awayAt=performance.now(); else if(game&&game.awayAt){ game.ev.away=true; game.awayAt=0; game.penalty+=10; } });
+// Mouse fallback: click = a step, wheel = loud noise
+window.addEventListener("pointerdown",()=>{ if(sensor.mouse){ sensor.steps++; sensor.lastStep=performance.now(); } });
+window.addEventListener("wheel",()=>{ if(sensor.mouse){ sensor.mic=0.4; setTimeout(()=>sensor.mic=0,400);} });
+async function enableSensors(){
+  try{
+    if(typeof DeviceMotionEvent!=="undefined" && typeof DeviceMotionEvent.requestPermission==="function"){
+      const p = await DeviceMotionEvent.requestPermission();
+      if(p!=="granted"){ toast("من غير إذن الحساسات هتلعب بوضع التجربة. اقفل الصفحة وافتحها ووافق."); return true; }
+    }
+  }catch(err){ /* not in a user gesture / unsupported */ }
+  window.addEventListener("devicemotion", onMotion);
+  return true;
+}
+// Mouse/touch fallback for desktop testing
+let mPrev=null;
+window.addEventListener("pointermove", e=>{
+  if(!sensor.mouse) return;
+  const now = performance.now();
+  if(mPrev){ const dt=(now-mPrev.t)/1000||0.016; const v=Math.hypot(e.clientX-mPrev.x,e.clientY-mPrev.y)/dt;
+    sensor.rr = v/40; sensor.acc = 0; }
+  sensor.roll = ((e.clientX/window.innerWidth)-0.5)*0.6; mPrev={x:e.clientX,y:e.clientY,t:now};
+});
+
+/* ================= CHARACTERS ================= */
+function avatar(o){
+  // o: skin, head ("ghutra"|"hijab"|"cap"|"pilot"), hc (head color), beard
+  const head = {
+    ghutra:`<path d="M10 30 Q32 2 54 30 L58 58 Q46 44 32 46 Q18 44 6 58 Z" fill="${o.hc}"/><rect x="13" y="18" width="38" height="5" rx="2.5" fill="#1d1d1d"/>`,
+    hijab:`<path d="M8 34 Q32 -2 56 34 L58 64 L6 64 Z" fill="${o.hc}"/>`,
+    cap:`<path d="M14 26 Q32 8 50 26 Z" fill="${o.hc}"/><rect x="30" y="22" width="24" height="5" rx="2" fill="${o.hc}"/>`,
+    pilot:`<path d="M13 25 Q32 9 51 25 L51 28 L13 28 Z" fill="${o.hc}"/><rect x="28" y="16" width="8" height="5" rx="1" fill="#e3b04b"/>`,
+  }[o.head];
+  const beard = o.beard ? `<path d="M19 40 Q32 60 45 40 Q40 46 32 46 Q24 46 19 40Z" fill="${o.beard}"/>` : "";
+  const front = o.head==="hijab" ? `<path d="M8 34 Q32 -2 56 34 L56 40 Q50 18 32 16 Q14 18 8 40Z" fill="${o.hc}"/>` : "";
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#ffffff14"/>${o.head==="hijab"?head:""}<circle cx="32" cy="34" r="15" fill="${o.skin}"/>${o.head!=="hijab"?head:front}<circle cx="26.5" cy="33" r="1.8" fill="#1d1408"/><circle cx="37.5" cy="33" r="1.8" fill="#1d1408"/><path d="M27 40 Q32 43 37 40" stroke="#1d1408" stroke-width="1.6" fill="none" stroke-linecap="round"/>${beard}</svg>`;
+}
+const CHARS = {
+  abuFahad:{name:"أبو فهد", pitch:0.7, rate:0.95, svg:avatar({skin:"#c99a6e",head:"ghutra",hc:"#f5f2ea",beard:"#e8e4dc"}), lines:{
+    intro:["تعال يا ولدي، جيب الشاي على هونك."],
+    morning:["صباح الخير، أبي شاي الصبح ثقيل."], night:["الحين الليل، بس الشاي ما له وقت."],
+    shaky:["على هونك! إيدك ترجف ليش؟","شوي شوي يا ولدي.","هدّي إيدك، الشاي مو هارب."],
+    veryShaky:["يا ولد! بتكبه على الزولية!","وقّف وقّف، ثبّت!"],
+    steady:["إيه كذا، إيد رجّال.","زين زين، كمّل."],
+    tilt:["عدّل الاستكانة، مايلة!","مايلة يمين ويسار، عدّلها."],
+    spill:["كبيت شوي! الله يهداك.","الصحن صار بحر."],
+    stop:["وين وقفت؟ تعال!","الشاي برد، امش!"],
+    fast:["لا تركض! مو سباق.","بشويش، الركض يكب الشاي."],
+    loud:["لا تسولف وانت شايل الشاي.","ركّز، خل السالفة بعدين."],
+    touch:["لا تحط صبعك بالشاي!"],
+    turn:["وين رايح؟ أنا هني!","لا تلف كذا، بيدوخ الشاي."],
+    faceDown:["قلبت الاستكانة؟! وش هالحركة!"], drop:["طاح! الله يستر!"],
+    away:["وين رحت؟ تركتني بدون شاي!"],
+    half:["نص الطريق، كمّل."], near:["قربت، خطوتين بعد."],
+    timeLow:["يلا يلا، تأخرت!"],
+    win:["تسلم يمينك، شاي يعدل الراس.","ما شاء الله، تقدر تصب بالديوانية من اليوم."],
+    lose:["لا لا، الشاي ما وصلني زين. حاول مرة ثانية.","بنعطي الصبّة لأخوك."],
+  }},
+  captain:{name:"الكابتن", pitch:0.9, rate:1.05, svg:avatar({skin:"#e0b48a",head:"pilot",hc:"#1f3554"}), lines:{
+    intro:["معكم الكابتن. متوقعين مطبات خفيفة، الطاقم يكمّل الضيافة."],
+    turbWarn:["انتباه، مطبات جاية الحين!","ربطوا الأحزمة، فيه مطبات."],
+    turbEnd:["الجو هدي، كمّلوا."],
+  }},
+  passenger:{name:"الراكب النايم", pitch:1.0, rate:1.0, svg:avatar({skin:"#d9a77b",head:"cap",hc:"#5d6b73",beard:"#3a2a1c"}), lines:{
+    shaky:["انتبه لا تكبه عليّ!","الله يخليك ثبّت."], veryShaky:["ثوبي! ثوبي بيتوسخ!"],
+    steady:["ما شاء الله، ولا نقطة رغم المطبات."],
+    tilt:["الكوب مايل علي!"], spill:["آآه! نزلت على رجلي!","مضيفة! منديل لو سمحتي."],
+    loud:["ششش! أبي أنام.","وطّي صوتك، الناس نايمة."],
+    touch:["لا تلعب بالكوب، عطني إياه."], turn:["أنا هنا مو هناك."],
+    away:["المضيفة راحت وين؟"], drop:["طاح الكوب؟!"],
+    win:["شكراً، أحلى ضيافة في حياتي."], lose:["خلاص، بطلب عصير أحسن."],
+  }},
+  mama:{name:"الوالدة", pitch:1.3, rate:1.0, svg:avatar({skin:"#d8a878",head:"hijab",hc:"#2d4a3e"}), lines:{
+    intro:["الضيوف وصلوا. جيب الشاي ولا تفشلني قدامهم."],
+    shaky:["ثبّت إيدك يا حبيبي، الناس تشوف.","بشويش، فضحتنا."],
+    veryShaky:["لا لا لا! بالراحة!"],
+    steady:["هذا ولدي، الله يحفظك.","كذا، خليهم يشوفون التربية."],
+    tilt:["الاستكانة مايلة، عدّلها!"], spill:["كبيته على السجادة الجديدة!","يا فشلتي."],
+    loud:["وطّي صوتك، عيب قدام الضيوف.","ششش، لا تضحك الحين."],
+    touch:["إيدك بعيد عن الشاي."], turn:["ليش تلف؟ قدام الضيوف!"],
+    away:["وين اختفيت؟ الضيوف يستنون!"], faceDown:["قلبتها؟! حسبي الله."], drop:["يا ويلي!"],
+    timeLow:["خلاص قربت، ثبّت."],
+    win:["الله يرضى عليك، بيّضت وجهي.","شفت؟ الكل مدحك."], lose:["مو مشكلة حبيبي، المرة الجاية أحسن.","خلاص أنا بصب، روح اجلس."],
+  }},
+  khala:{name:"خالتك نورة", pitch:1.45, rate:1.1, svg:avatar({skin:"#e3b892",head:"hijab",hc:"#8a2f4a"}), lines:{
+    steady:["ما شاء الله، كبر وصار رجال.","إيده ثابتة، طالع على أبوه."],
+    shaky:["هههه ترجف، شكله مستحي.","ليش إيدك ترجف؟ خايف مني؟"],
+    spill:["أوبس! صورتها ونزلتها بالقروب.","لا تعيدها، الكل شافك."],
+    loud:["وش قاعد يقول؟"], bump:["أوه آسفة حبيبي، ما انتبهت!"],
+    touch:["شوفوه يلعب بالاستكانة."],
+  }},
+};
+
+/* ================= STORIES ================= */
+const STORIES = [
+  {id:"diwaniya", title:"شاي أبو فهد", sub:"وصّل الشاي من المطبخ لأبو فهد في الديوانية وانت ماشي.",
+   rules:["امشي فعلاً بالموبايل، الخطوات بتتحسب.","لا تركض ولا توقف كتير.","الكلام بصوت عالي يلهيك."],
+   chars:["abuFahad"], main:"abuFahad", goal:{type:"steps", n:16, maxSec:45}, accW:1.5, mic:true},
+  {id:"plane", title:"مطبّات على 30 ألف قدم", sub:"انت المضيف، وبتقدّم الشاي لراكب نايم والطيارة بتتهز.",
+   rules:["لما الكابتن يقول مطبات، ميّل الموبايل عكس الهزة.","لو صوتك علي الراكب هيصحى وتخسر نقط."],
+   chars:["captain","passenger"], main:"passenger", goal:{type:"time", sec:25}, accW:6, mic:true, quietPenalty:6, turb:true},
+  {id:"mama", title:"عزومة الوالدة", sub:"الضيوف قاعدين، والوالدة عينها عليك. وخالتك نورة بتتحرك كتير.",
+   rules:["امسك الشاي 20 ثانية قدام الضيوف.","ممنوع تضحك أو تتكلم بصوت عالي.","خالتك ممكن تخبطك فجأة، خليك جاهز."],
+   chars:["mama","khala"], main:"mama", goal:{type:"time", sec:20}, accW:6, mic:true, quietPenalty:8, bump:true},
+];
+let voiceOn = store.get("voice", true);
+function speak(text, ch){
+  if(!voiceOn || !("speechSynthesis" in window)) return;
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang="ar-SA"; u.pitch=ch.pitch; u.rate=ch.rate;
+    const v = speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith("ar")); if(v) u.voice=v; speechSynthesis.speak(u);}catch(e){}
+}
+let bubbleT=null;
+function say(charId, event){
+  const ch = CHARS[charId]; const pool = ch && ch.lines[event]; if(!pool) return false;
+  const text = pool[Math.floor(Math.random()*pool.length)];
+  $("bubbleAv").innerHTML = ch.svg; $("bubbleName").textContent = ch.name; $("bubbleText").textContent = text;
+  const b=$("bubble"); b.hidden=false; b.style.animation="none"; void b.offsetWidth; b.style.animation="";
+  clearTimeout(bubbleT); bubbleT=setTimeout(()=>b.hidden=true, 2800);
+  speak(text, ch); return true;
+}
+// The "brain": turns sensor readings into events, picks who reacts, with cooldowns
+const PRIORITY = ["drop","faceDown","away","bump","turbWarn","turbEnd","spill","veryShaky","loud","fast","stop","tilt","turn","touch","shaky","near","half","timeLow","steady"];
+function storyReact(now){
+  const g = game, ev = g.ev;
+  if(now - g.lastSay < 2300) return;
+  for(const e of PRIORITY){
+    if(!ev[e]) continue;
+    if(now - (g.cool[e]||0) < 5000 && !["bump","turbWarn","turbEnd","drop"].includes(e)) { ev[e]=false; continue; }
+    const who = g.story.chars.filter(c=>CHARS[c].lines[e]);
+    if(!who.length){ ev[e]=false; continue; }
+    const pick = who.includes(g.story.main) && Math.random()<0.6 ? g.story.main : who[Math.floor(Math.random()*who.length)];
+    if(say(pick,e)){ g.cool[e]=now; g.lastSay=now; g.log.push(e); }
+    ev[e]=false; return;
+  }
+}
+function detectEvents(now, pt, dt){
+  const g = game, ev = g.ev, s = g.story;
+  if(g.jEma>8) ev.veryShaky=true; else if(g.jEma>4) ev.shaky=true;
+  g.steadyT = g.jEma<1.2 ? g.steadyT+dt : 0; if(g.steadyT>3.5){ ev.steady=true; g.steadyT=0; }
+  const dRoll = Math.abs(sensor.roll-g.roll0-(g.dist||0));
+  g.tiltT = dRoll>0.25 ? g.tiltT+dt : 0; if(g.tiltT>0.6){ ev.tilt=true; g.tiltT=0; }
+  if(g.spill - g.spillSaid > 0.15){ ev.spill=true; g.spillSaid=g.spill; }
+  if(sensor.gz < -6) ev.faceDown=true;
+  if(sensor.got && sensor.gMag < 3) ev.drop=true;
+  if(now - g.yawT > 2000){ if(Math.abs(sensor.yaw-g.yawRef)>150) ev.turn=true; g.yawRef=sensor.yaw; g.yawT=now; }
+  if(s.mic){
+    if(micAn) readMic();
+    g.loudT = sensor.mic>0.08 ? g.loudT+dt : 0;
+    if(g.loudT>0.25){ ev.loud=true; g.loudT=0; if(s.quietPenalty && now-(g.penT||0)>3000){ g.penalty+=s.quietPenalty; g.penT=now; } }
+  }
+  if(s.goal.type==="steps"){
+    const steps = sensor.steps - g.steps0, n=s.goal.n;
+    if(steps>0 && now-sensor.lastStep>3500 && steps<n) ev.stop=true;
+    g.stepTimes = g.stepTimes.filter(t=>now-t<2000);
+    if(sensor.lastStep>g.lastStepSeen){ g.stepTimes.push(sensor.lastStep); g.lastStepSeen=sensor.lastStep; }
+    if(g.stepTimes.length>=5) ev.fast=true;
+    if(!g.saidHalf && steps>=n/2){ ev.half=true; g.saidHalf=true; }
+    if(!g.saidNear && steps>=n-3){ ev.near=true; g.saidNear=true; }
+  }
+  const total = s.goal.type==="time"? s.goal.sec : s.goal.maxSec;
+  if(!g.saidLow && total-pt<5){ ev.timeLow=true; g.saidLow=true; }
+  // scripted turbulence
+  if(s.turb){
+    const W = [[5,9],[13,16.5],[19,23]];
+    const inW = W.find(w=>pt>=w[0]&&pt<w[1]);
+    const soon = W.find(w=>pt>=w[0]-1.6&&pt<w[0]);
+    if(soon && g.turbIdx!==soon[0]){ ev.turbWarn=true; g.turbIdx=soon[0]; }
+    if(!inW && g.inTurb){ ev.turbEnd=true; }
+    g.inTurb = !!inW;
+    g.dist = inW ? 0.22*Math.sin(2*Math.PI*0.9*pt) + 0.08*Math.sin(2*Math.PI*2.3*pt+1) : g.dist*0.92;
+    $("playCanvas").style.transform = inW ? `translate(${(Math.random()-0.5)*6}px,${(Math.random()-0.5)*6}px)` : "";
+  }
+  if(s.bump && !g.bumped && pt>g.bumpAt){ g.bumped=true; g.thVel += (Math.random()<0.5?-1:1)*2.6; ev.bump=true; if(navigator.vibrate) try{navigator.vibrate([40,30,60])}catch(e){} }
+}
+function renderStories(){
+  const l=$("storyList"); l.innerHTML="";
+  const stars = store.get("stars",{});
+  STORIES.forEach(s=>{
+    const b=document.createElement("button"); b.className="card story";
+    b.innerHTML=`<div class="avs">${CHARS[s.main].svg}</div><div><h3></h3><p></p><div class="stars">${"★".repeat(stars[s.id]||0)}${"☆".repeat(3-(stars[s.id]||0))}</div></div>`;
+    b.querySelector("h3").textContent=s.title; b.querySelector("p").textContent=s.sub;
+    b.onclick=()=>openIntro(s); l.appendChild(b);
+  });
+  $("voiceToggle").checked = voiceOn;
+}
+$("voiceToggle").onchange=e=>{ voiceOn=e.target.checked; store.set("voice",voiceOn); };
+let curStory=null;
+function openIntro(s){
+  curStory=s;
+  $("introAvatars").innerHTML = s.chars.map(c=>`<div class="avs">${CHARS[c].svg}</div>`).join("");
+  $("introTitle").textContent=s.title; $("introText").textContent=s.sub;
+  $("introRules").innerHTML = "<ul style='margin:0;padding-inline-start:18px;line-height:1.8'>"+s.rules.map(r=>`<li>${r}</li>`).join("")+"</ul>";
+  show("s-intro");
+}
+$("btnStory").onclick=()=>{ renderStories(); show("s-stories"); };
+$("btnIntroGo").onclick=async ()=>{
+  if(voiceOn && "speechSynthesis" in window){ try{ speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); }catch(e){} } // unlock audio on iOS
+  if(curStory.mic) await Promise.race([enableMic(), new Promise(r=>setTimeout(()=>r(false),4000))]);
+  party.on=false; startRound(curStory);
+};
+
+/* ================= GAME ================= */
+const home = makeGlass($("homeCanvas"));
+const play = makeGlass($("playCanvas"));
+let game = null;
+let party = {on:false, players:[], idx:0, results:[]};
+
+function homeLoop(t){
+  if($("s-home").classList.contains("on")){
+    const st = home.st; st.theta = Math.sin(t/1400)*0.05; st.amp = 0.012;
+    home.draw(1/60);
+  }
+  requestAnimationFrame(homeLoop);
+}
+requestAnimationFrame(homeLoop);
+
+async function startRound(story){
+  if(story && story.type) story = null; // called from a click event
+  const ok = await enableSensors();
+  if(!ok) return;
+  show("s-play"); play.resize();
+  Object.assign(play.st,{theta:0,amp:0,spill:0,drops:[]});
+  $("spillFill").style.width="0%"; $("playWarn").hidden=true; $("bubble").hidden=true; $("playCanvas").style.transform="";
+  game = {phase:"count", t0:performance.now(), samples:[], roll0:null, thVel:0, spill:0, jEma:0, ended:false, spillT:0, tableT:0,
+    story: story||null, ev:{}, cool:{}, lastSay:0, log:[], penalty:0, steadyT:0, tiltT:0, loudT:0, spillSaid:0,
+    yawRef:sensor.yaw, yawT:performance.now(), steps0:sensor.steps, stepTimes:[], lastStepSeen:sensor.lastStep, dist:0,
+    bumpAt: 7+Math.random()*7, awayAt:0};
+  $("goalLine").hidden = !story;
+  $("playHint").textContent = story && story.turb ? "لما الطيارة تتهز، ميّل عكس الهزة" : story && story.goal.type==="steps" ? "امشي بالراحة وانت ماسك الموبايل مفرود" : "بص على حافة الاستكانة، وخد نفس هادي";
+  if(story){ const h=new Date().getHours(); const main=story.main;
+    setTimeout(()=>{ const intro = story.chars.find(c=>CHARS[c].lines.intro); if(intro) say(intro,"intro");
+      else if(CHARS[main].lines[h<12?"morning":"night"]) say(main, h<12?"morning":"night"); }, 300); }
+  setTimeout(()=>{ if(!sensor.got){ sensor.mouse=true; $("playWarn").hidden=false; $("playWarn").textContent="مفيش حساسات هنا، ده وضع تجربة بالماوس. افتح اللينك من الموبايل."; } }, 900);
+  requestAnimationFrame(tick);
+}
+
+function tick(now){
+  if(!game || game.ended) return;
+  if(!tick.prev) tick.prev = now;
+  const dt = Math.min(0.05,(now-tick.prev)/1000); tick.prev = now;
+  const el = (now-game.t0)/1000;
+  const st = play.st;
+
+  // jitter: rotation (deg/s) + linear accel weighted
+  const j = sensor.rr + sensor.acc*(game.story ? game.story.accW : 8);
+  game.jEma += (j-game.jEma)*Math.min(1,dt*8);
+
+  if(game.phase==="count"){
+    const left = CFG.COUNTDOWN - el;
+    $("count").textContent = left>0 ? Math.ceil(left) : "";
+    $("timer").textContent = CFG.ROUND_SEC.toFixed(1);
+    game.roll0 = sensor.roll;
+    if(left<=0){ game.phase="play"; game.tp=now; }
+  } else {
+    const pt = (now-game.tp)/1000;
+    const S = game.story;
+    const total = S ? (S.goal.type==="time" ? S.goal.sec : S.goal.maxSec) : CFG.ROUND_SEC;
+    const remain = Math.max(0, total-pt);
+    $("timer").textContent = remain.toFixed(1);
+    const dRoll = sensor.roll - game.roll0 + (game.dist||0);
+    game.samples.push({t:pt, rr:sensor.rr, acc:sensor.acc, j, dRoll});
+    if(game.jEma < 0.2) game.tableT += dt; else game.tableT = 0;
+    let goalDone = false;
+    if(S){
+      detectEvents(now, pt, dt); storyReact(now);
+      if(S.goal.type==="steps"){ const st=sensor.steps-game.steps0; $("goalLine").textContent=`الخطوات: ${Math.min(st,S.goal.n)} من ${S.goal.n}`; goalDone = st>=S.goal.n; }
+      else $("goalLine").textContent = "امسك لحد ما الوقت يخلص";
+    }
+    if(remain<=0 || game.spill>=1 || goalDone){ endRound(pt, goalDone || (S && S.goal.type==="time" && remain<=0)); return; }
+  }
+
+  // slosh physics: angle follows tilt like a damped spring, waves follow jitter
+  const target = game.phase==="play" ? clamp(sensor.roll-(game.roll0||0)+(game.dist||0),-0.8,0.8) : 0;
+  if(game.inTurb) game.jEma = Math.max(game.jEma, 2.5);
+  const acc = -38*(st.theta-target) - 5.5*game.thVel;
+  game.thVel += acc*dt; st.theta += game.thVel*dt;
+  st.amp += (clamp(game.jEma*0.011,0,0.16)-st.amp)*Math.min(1,dt*6);
+
+  if(game.phase==="play"){
+    const level = st.level + game.spill*0.38, tan=Math.tan(st.theta);
+    const yL = level + 0.56*tan - st.amp, yR = level - 0.56*tan - st.amp; // rim at y=-1
+    const over = Math.max(0, -1.0 - Math.min(yL,yR) + 0.0);
+    if(over>0){
+      game.spill = Math.min(1, game.spill + over*dt*5.5);
+      game.spillT += dt;
+      if(Math.random()<0.6) play.spawnDrop(yL<yR?-1:1);
+      if(navigator.vibrate && Math.random()<0.1) try{navigator.vibrate(15)}catch(e){}
+    }
+    st.spill = game.spill;
+    $("spillFill").style.width = (game.spill*100).toFixed(0)+"%";
+  }
+  play.draw(dt);
+  if(debugOn) $("debug").textContent = `rr ${sensor.rr.toFixed(2)}\nacc ${sensor.acc.toFixed(3)}\nj ${game.jEma.toFixed(2)}\nroll ${(sensor.roll*57.3).toFixed(1)}°\nspill ${(game.spill*100).toFixed(0)}%`;
+  requestAnimationFrame(tick);
+}
+
+/* ================= ANALYSIS (the "AI coach" core, on-device) ================= */
+function mean(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
+function median(a){if(!a.length)return 0;const b=[...a].sort((x,y)=>x-y);return b[Math.floor(b.length/2)]}
+function resample(samples, key, hz){
+  if(samples.length<4) return [];
+  const T = samples[samples.length-1].t, out=[]; let i=0;
+  for(let t=0;t<=T;t+=1/hz){ while(i<samples.length-2 && samples[i+1].t<t) i++;
+    const a=samples[i], b=samples[i+1]; const f=b.t>a.t?(t-a.t)/(b.t-a.t):0; out.push(a[key]+(b[key]-a[key])*clamp(f,0,1)); }
+  return out;
+}
+function spectrum(x, hz, fmin, fmax, step){
+  const m = mean(x); const y = x.map(v=>v-m); const res=[];
+  for(let f=fmin; f<=fmax; f+=step){ let re=0,im=0; const w=2*Math.PI*f/hz;
+    for(let n=0;n<y.length;n++){ re+=y[n]*Math.cos(w*n); im-=y[n]*Math.sin(w*n); }
+    res.push({f, p:(re*re+im*im)/y.length}); }
+  return res;
+}
+function analyze(samples, duration, spill){
+  const js = samples.map(s=>s.j);
+  const meanJ = mean(js);
+  const stability = Math.round(100*Math.exp(-meanJ/CFG.JITTER_K));
+  const meanDev = mean(samples.map(s=>Math.abs(s.dRoll)))*57.3; // degrees
+  const balance = Math.round(clamp(100*Math.exp(-meanDev/5),0,100));
+  const third = Math.floor(js.length/3);
+  const first = mean(js.slice(0,third)), last = mean(js.slice(-third));
+  const fatigue = first>0 ? last/first : 1;
+  const endurance = Math.round(clamp(100 - Math.max(0,fatigue-1)*55, 0, 100));
+  const med = median(js); const spikes = js.filter(v=>v>Math.max(1.5,med*3)).length;
+  const spikesPerSec = spikes/Math.max(1,duration);
+  const smoothness = Math.round(clamp(100 - spikesPerSec*12, 0, 100));
+  // tremor: dominant frequency of rotation magnitude between 3 and 15 Hz
+  let tremor = null;
+  const hz = 50; const rs = resample(samples,"rr",hz);
+  const rate = samples.length/Math.max(0.1,duration);
+  if(rs.length>hz*4 && rate>30){
+    const sp = spectrum(rs, hz, 3, Math.min(15, rate/2-1), 0.25);
+    const tot = sp.reduce((a,b)=>a+b.p,0)||1;
+    const peak = sp.reduce((a,b)=>b.p>a.p?b:a, sp[0]);
+    const band = sp.filter(s=>s.f>=8&&s.f<=12).reduce((a,b)=>a+b.p,0)/tot;
+    tremor = {peakHz:+peak.f.toFixed(1), band812:+band.toFixed(2)};
+  }
+  const onTable = meanJ < CFG.TABLE_MEAN && Math.max(0,...js) < CFG.TABLE_MAX;
+  const base = stability*0.6 + balance*0.25 + smoothness*0.15;
+  let score = base*(1-0.6*spill);
+  if(spill>=1) score *= clamp(duration/CFG.ROUND_SEC,0,1)*0.8;
+  score = Math.round(clamp(score,0,100));
+  return {score, dims:{stability,balance,endurance,smoothness}, meanJ:+meanJ.toFixed(2), meanDevDeg:+meanDev.toFixed(1),
+          fatigue:+fatigue.toFixed(2), spikesPerSec:+spikesPerSec.toFixed(2), spill:+spill.toFixed(2), duration:+duration.toFixed(1), tremor, onTable};
+}
+function titleFor(s){
+  if(s>=95) return "إيد جرّاح";
+  if(s>=85) return "قنّاص";
+  if(s>=70) return "ثابت";
+  if(s>=50) return "مقبول";
+  if(s>=30) return "مرعوش شوية";
+  return "زلزال";
+}
+const DIM_LABEL = {stability:"الثبات", balance:"الاتزان", endurance:"التحمّل", smoothness:"النعومة"};
+const TIPS = {
+  stability:["سند كوعك على جنبك، كده الإيد بتتهز أقل بكتير.","خد نفس عميق، وطلّعه بالراحة، واثبت وانت في نص النَفَس اللي طالع زي القنّاصين.","جرّب تمسك الموبايل بإيدين، والصوابع تحت مش على الجناب."],
+  balance:["بص على الحافة الدهبية بتاعة الاستكانة مش على الشاي.","ارخي كتفك، الكتف المشدود بيميّل الإيد من غير ما تحس.","في أول الثلاث ثواني اختار الوضع المريح ليك، اللعبة بتعتبره هو المستوى."],
+  endurance:["إيدك بتتعب في آخر الجولة. امسك بخفة، الشد الزيادة بيعمل رعشة.","جرّب تثبّت دراعك على صدرك بدل ما يبقى في الهوا."],
+  smoothness:["فيه حركات مفاجئة. لما الشاي يتهز ما تصلحوش بسرعة، التصحيح الصغير البطيء أحسن.","ما تتكلمش ولا تضحك وانت بتلعب 😄 أي حركة في جسمك بتوصل للإيد."],
+};
+function localCoach(a){
+  const dims = Object.entries(a.dims).sort((x,y)=>x[1]-y[1]);
+  const [weakKey, weakVal] = dims[0]; const [strongKey] = dims[dims.length-1];
+  let text;
+  if(a.onTable) text = "القراءات ثابتة بشكل مش طبيعي، الموبايل غالباً كان على الترابيزة. الإيد الحقيقية ليها رعشة خفيفة دايماً.";
+  else if(a.score>=85) text = `أداء قوي. أقوى حاجة عندك ${DIM_LABEL[strongKey]}. لو عايز توصل لـ"إيد جرّاح" ركّز على ${DIM_LABEL[weakKey]}.`;
+  else if(a.spill>=1) text = `الشاي اتكب قبل ما الوقت يخلص. أكتر حاجة محتاجة شغل هي ${DIM_LABEL[weakKey]} (${weakVal}).`;
+  else text = `أقوى حاجة عندك ${DIM_LABEL[strongKey]}، وأضعف حاجة ${DIM_LABEL[weakKey]} (${weakVal}). ركّز عليها الجولة الجاية.`;
+  const pool = TIPS[weakKey]; const tips = [pool[Math.floor(Math.random()*pool.length)]];
+  if(a.dims.endurance<70 && weakKey!=="endurance") tips.push(TIPS.endurance[0]);
+  return {text, tips, weakKey, source:"local"};
+}
+async function aiCoach(a, local){
+  if(!CFG.AI_ENDPOINT) return null;
+  try{
+    const ctrl = new AbortController(); const to=setTimeout(()=>ctrl.abort(),7000);
+    const res = await fetch(CFG.AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({analysis:a, weakest:local.weakKey, history:store.get("hist",[]).slice(-5)}), signal:ctrl.signal});
+    clearTimeout(to);
+    if(!res.ok) return null;
+    const d = await res.json(); if(!d.text) return null;
+    return {text:d.text, tips:d.tips||[], source:"ai"};
+  }catch(e){return null}
+}
+
+/* ================= RESULTS ================= */
+let lastResult = null;
+function endRound(duration, goalMet){
+  game.ended = true; tick.prev = null; sensor.mouse=false; $("playCanvas").style.transform="";
+  const S = game.story;
+  const a = analyze(game.samples, duration, game.spill);
+  if(S){
+    a.penalty = game.penalty; a.score = Math.max(0, a.score - game.penalty);
+    a.story = {id:S.id, title:S.title, goalMet:!!goalMet && game.spill<1, events:game.log.slice(-12)};
+    a.stars = a.story.goalMet && !a.onTable ? (a.score>=85?3:a.score>=65?2:1) : 0;
+    const stars = store.get("stars",{}); if(a.stars>(stars[S.id]||0)){ stars[S.id]=a.stars; store.set("stars",stars); }
+    setTimeout(()=>say(S.main, a.stars>0 ? "win" : "lose"), 400);
+  }
+  if(a.onTable) a.score = 0;
+  lastResult = a;
+  const who = party.on ? party.players[party.idx] : null;
+  if(!a.onTable){
+    const hist = store.get("hist",[]); hist.push({s:a.score,d:a.dims,t:Date.now()}); store.set("hist",hist.slice(-30));
+    if(!party.on){ const best=store.get("best",0); if(a.score>best){ store.set("best",a.score); if(best>0) toast("رقم قياسي جديد!"); } }
+  }
+  if(party.on) party.results.push({name:who, score:a.score});
+  renderResult(a, who);
+  show("s-result");
+}
+function renderResult(a, who){
+  $("resWho").textContent = who ? who : a.story ? `${a.story.title}: ${"★".repeat(a.stars)}${"☆".repeat(3-a.stars)}` : "النتيجة";
+  $("resScore").textContent = a.score;
+  $("resTitle").textContent = a.onTable ? "غشاش؟" : titleFor(a.score);
+  $("resLine").textContent = a.spill>=1 ? `الشاي اتكب بعد ${a.duration} ثانية.` :
+     a.story && !a.story.goalMet ? "ما وصلت للهدف قبل ما الوقت يخلص." :
+     a.spill>0.05 ? `خلّصت الجولة، بس كبيت ${Math.round(a.spill*100)}% من الشاي.` : "خلّصت الجولة والشاي كامل في الاستكانة.";
+  if(a.penalty) $("resLine").textContent += ` اتخصم منك ${a.penalty} نقطة (صوت عالي أو سبت التطبيق).`;
+  $("resWarn").hidden = !a.onTable;
+  if(a.onTable) $("resWarn").textContent = "النتيجة اتلغت لأن الموبايل شكله كان على الترابيزة. امسكه بإيدك.";
+  const m = $("meters"); m.innerHTML="";
+  const weakest = Object.entries(a.dims).sort((x,y)=>x[1]-y[1])[0][0];
+  for(const [k,v] of Object.entries(a.dims)){
+    const col = v>=75?"var(--good)":v>=50?"var(--gold)":"var(--bad)";
+    const row = document.createElement("div"); row.className="meter"+(k===weakest?" weak":"");
+    row.innerHTML = `<span>${DIM_LABEL[k]}</span><div class="bar"><i style="width:${v}%;background:${col}"></i></div><b>${v}</b>`;
+    m.appendChild(row);
+  }
+  $("tremorLine").textContent = a.tremor ? `التردد الغالب لحركة إيدك: ${a.tremor.peakHz} هرتز. كل الناس عندهم رعشة طبيعية خفيفة، والكافيين وقلة النوم والتوتر بيزوّدوها.` : "";
+  const lc = localCoach(a);
+  setCoach(lc);
+  aiCoach(a, lc).then(r=>{ if(r && lastResult===a) setCoach(r); });
+  $("btnNextTurn").hidden = !party.on;
+  $("btnAgain").hidden = party.on;
+  $("btnShare").hidden = party.on || a.onTable;
+}
+function setCoach(c){
+  $("coachText").textContent = c.text;
+  $("coachSrc").textContent = c.source==="ai" ? "ذكاء اصطناعي" : "تحليل على جهازك";
+  const ul=$("coachTips"); ul.innerHTML=""; c.tips.forEach(t=>{const li=document.createElement("li"); li.textContent=t; ul.appendChild(li);});
+}
+
+/* ================= SHARE / CHALLENGE ================= */
+function challengeUrl(score){
+  const name = store.get("name","");
+  const u = new URL(location.href); u.search=""; u.hash="";
+  u.searchParams.set("c",score); if(name) u.searchParams.set("n",name);
+  return u.toString();
+}
+$("btnShare").onclick = async ()=>{
+  const s = lastResult.score;
+  const text = `إيدي جابت ${s}/100 في "لا تكب الشاي" (${titleFor(s)}). تقدر تغلبني؟`;
+  const url = challengeUrl(s);
+  try{ if(navigator.share){ await navigator.share({title:"لا تكب الشاي", text, url}); return; } }catch(e){ if(e.name==="AbortError") return; }
+  try{ await navigator.clipboard.writeText(text+" "+url); toast("اتنسخ اللينك، ابعته لصاحبك"); }catch(e){ toast(url); }
+};
+function readChallenge(){
+  const q = new URLSearchParams(location.search); const c = parseInt(q.get("c"),10);
+  if(!isNaN(c)){ const n=(q.get("n")||"صاحبك").slice(0,16);
+    const box=$("challengeBox"); box.hidden=false; box.textContent = `${n} جاب ${c}/100. تقدر تغلبه؟`; }
+}
+
+/* ================= PARTY ================= */
+function renderPlayers(){
+  const l=$("playerList"); l.innerHTML="";
+  party.players.forEach((p,i)=>{ const d=document.createElement("div"); d.className="chip";
+    d.innerHTML=`<span></span><button aria-label="شيل">×</button>`; d.querySelector("span").textContent=p;
+    d.querySelector("button").onclick=()=>{party.players.splice(i,1);renderPlayers();}; l.appendChild(d); });
+  $("btnPartyStart").disabled = party.players.length<2;
+}
+function addPlayer(){ const v=$("playerName").value.trim(); if(!v) return; if(party.players.length>=12){toast("كفاية 12 لاعب");return;}
+  party.players.push(v); $("playerName").value=""; renderPlayers(); store.set("party",party.players); $("playerName").focus(); }
+$("btnAdd").onclick=addPlayer;
+$("playerName").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addPlayer();}});
+$("btnParty").onclick=()=>{ party.players=store.get("party",[]); renderPlayers(); show("s-party"); };
+function beginParty(){ party.on=true; party.idx=0; party.results=[]; showTurn(); }
+function showTurn(){ $("turnName").textContent=party.players[party.idx]; show("s-turn"); }
+$("btnPartyStart").onclick=beginParty;
+$("btnTurnGo").onclick=startRound;
+$("btnNextTurn").onclick=()=>{ party.idx++; if(party.idx<party.players.length) showTurn(); else showBoard(); };
+function showBoard(){
+  const r=[...party.results].sort((a,b)=>b.score-a.score); const ol=$("boardList"); ol.innerHTML="";
+  r.forEach((p,i)=>{ const li=document.createElement("li"); if(i===r.length-1) li.className="last";
+    li.innerHTML=`<span></span><b>${p.score}</b>`; li.querySelector("span").textContent=`${i+1}. ${p.name}`; ol.appendChild(li); });
+  $("loserLine").textContent = `☕ ${r[r.length-1].name} يصب الشاي للقعدة.`;
+  show("s-board");
+}
+$("btnRematch").onclick=beginParty;
+
+/* ================= WIRING ================= */
+$("btnSolo").onclick=()=>{ party.on=false; startRound(); };
+$("btnAgain").onclick=()=>startRound(lastResult && lastResult.story ? curStory : null);
+$("btnHome").onclick=()=>{ party.on=false; show("s-home"); };
+function refreshHome(){ const b=store.get("best",0); $("bestLine").textContent = b? `أحسن نتيجة ليك: ${b}/100` : ""; home.resize(); }
+let debugOn=false, taps=0;
+$("logo").addEventListener("click",()=>{ if(++taps>=5){ debugOn=!debugOn; $("debug").style.display=debugOn?"block":"none"; taps=0; } });
+readChallenge(); refreshHome();
+</script>
+</body>
+</html>
