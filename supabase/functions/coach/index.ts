@@ -1,4 +1,4 @@
-// Supabase Edge Function: AI coach for "لا تكب الشاي"
+// Supabase Edge Function: AI coach for "Don't Spill the Tea"
 // Deploy: supabase functions deploy coach --no-verify-jwt
 // Secret:  supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 // Then put the function URL in CFG.AI_ENDPOINT inside www/index.html.
@@ -9,13 +9,13 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SYSTEM = `انت مدرب لعبة موبايل اسمها "لا تكب الشاي". اللاعب بيمسك الموبايل وعليه استكانة شاي ولازم ما يكبهاش.
-هتوصلك أرقام من حساسات الموبايل بعد الجولة. اكتب باللهجة الخليجية البسيطة مع روح فكاهية خفيفة.
-- جملة تقييم واحدة قصيرة (أقل من 30 كلمة) تذكر أقوى وأضعف بُعد.
-- من 1 لـ 2 نصيحة عملية قصيرة للبُعد الأضعف.
-- لو فيه موقف (story) اتكلم بلسان الشخصية الرئيسية فيه.
-- ممنوع أي كلام طبي أو تشخيص، حتى لو الرعشة عالية.
-رجّع JSON فقط بالشكل: {"text": "...", "tips": ["..."]}`;
+const SYSTEM = `You are the coach in a mobile game called "Don't Spill the Tea". The player holds a phone with a full tea glass on screen and must not spill it.
+You receive phone-sensor metrics from one round. Write in short, playful English.
+- One assessment sentence (under 30 words) naming the strongest and weakest dimension.
+- 1-2 short practical tips for the weakest dimension.
+- If a story is present, speak as that story's main character.
+- No medical claims or diagnosis, even if tremor is high.
+Return JSON only: {"text": "...", "tips": ["..."]}`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       model: "claude-haiku-5-5",
       max_tokens: 300,
       system: SYSTEM,
-      messages: [{ role: "user", content: `نتيجة الجولة:\n${payload}` }],
+      messages: [{ role: "user", content: `Round result:\n${payload}` }],
     }),
   });
   if (!res.ok) return new Response(JSON.stringify({ error: "ai_failed" }), { status: 502, headers: { ...CORS, "content-type": "application/json" } });

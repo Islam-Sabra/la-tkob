@@ -1,19 +1,20 @@
-# لا تكب الشاي
+# Don't Spill the Tea
 
-لعبة موبايل (آيفون وأندرويد) بتقيس ثبات إيدك بحساسات الموبايل.
+A phone game (iPhone + Android) that measures how steady your hand is using the phone's motion sensors.
 
-- `index.html` اللعبة كاملة (HTML/JS). لازم تتنشر على HTTPS علشان الحساسات تشتغل.
-- `supabase/functions/coach/` المدرب الذكي بـ Claude (اختياري).
+Play: https://islam-sabra.github.io/la-tkob/
 
-## الحساسات المستخدمة
-الجيروسكوب (الرعشة واللف)، الأكسيليروميتر (الخطوات والخبطات والوقوع)، الجاذبية (الميل وقلب الموبايل)، المايك (الصوت العالي)، اللمس، الخروج من التطبيق، الاهتزاز، الصوت (الشخصيات بتتكلم).
+- `index.html` — the whole game (HTML/JS). Must be served over HTTPS for sensors to work.
+- `supabase/functions/coach/` — optional AI coach powered by Claude.
 
-## تجربة على الكمبيوتر
-افتح `index.html`. هيشتغل بوضع الماوس: الحركة = رعشة، الكليك = خطوة، الاسكرول = صوت عالي.
-اضغط على اسم اللعبة 5 مرات علشان تظهر قراءات الحساسات.
+## Sensors used
+Gyroscope (tremor, turning), accelerometer (steps, bumps, drops), gravity (tilt, face-down), microphone (loud noise), touch, leaving the app. Output: synthesized sound effects and vibration.
 
-## التطبيق على الستورز
-نفس الكود يتلف بـ Capacitor:
+## Desktop testing
+Open `index.html`: mouse demo mode (move = tremor, click = step, scroll = loud noise). Tap the title 5 times to show live sensor readings.
+
+## App stores
+Wrap the same code with Capacitor:
 npm i @capacitor/core @capacitor/cli @capacitor/ios @capacitor/android
-npx cap init "لا تكب الشاي" com.latkob.app --web-dir .
+npx cap init "Don't Spill the Tea" com.latkob.app --web-dir .
 npx cap add ios && npx cap add android

@@ -1,12 +1,19 @@
 {
-  "name": "لا تكب الشاي",
-  "short_name": "لا تكب الشاي",
-  "lang": "ar",
-  "dir": "rtl",
+  "name": "Don't Spill the Tea",
+  "short_name": "Spill the Tea",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f1d24",
   "theme_color": "#0f1d24",
-  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
 }
