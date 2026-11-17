@@ -189,7 +189,7 @@ const Engine = (()=>{
     try{
       if(typeof DeviceMotionEvent!=="undefined" && typeof DeviceMotionEvent.requestPermission==="function"){
         const p = await DeviceMotionEvent.requestPermission();
-        if(p!=="granted") toast("Motion access denied: demo mode. Reload and tap Allow.");
+        if(p!=="granted" && !enable.warned){ enable.warned=true; toast("Motion access denied: demo mode. Reload and tap Allow."); }
       }
     }catch(e){}
     window.removeEventListener("devicemotion", onMotion);
@@ -316,7 +316,7 @@ function makeGlass(canvas, opts={}){
 
 /* Tea physics shared by Tea & Waiter games */
 function makeTea(glass){
-  const t = {glass, thVel:0, spill:0, splashed:false, roll0:0, dist:0, extraAmp:0};
+  const t = {glass, thVel:0, spill:0, splashed:false, roll0:0, dist:0, extraAmp:0, ease:1};
   t.reset = ()=>{ Object.assign(glass.st,{theta:0,amp:0,spill:0,drops:[]}); t.thVel=0; t.spill=0; t.splashed=false; t.extraAmp=0; t.roll0=Engine.S.roll; };
   t.kick = (v)=>{ t.thVel += v; };
   t.slosh = (a)=>{ t.extraAmp = Math.max(t.extraAmp, a); };
@@ -327,7 +327,7 @@ function makeTea(glass){
     t.thVel += acc*dt; st.theta += t.thVel*dt;
     const j = S.rr + S.lin*accW + Math.abs(S.av)*2.5;
     t.extraAmp *= Math.exp(-dt*1.5);
-    let ampT = clamp(j*0.009 + t.extraAmp, 0, 0.2); if(turb) ampT = Math.max(ampT, 0.03);
+    let ampT = clamp((j*0.009 + t.extraAmp)*t.ease, 0, 0.2); if(turb) ampT = Math.max(ampT, 0.03);
     st.amp += (ampT-st.amp)*Math.min(1,dt*6);
     let near = 0;
     if(active){
@@ -430,6 +430,6 @@ const ICONS = (()=>{
     shake:`<svg viewBox="0 0 100 100"><g ${sw}><rect x="36" y="20" width="28" height="56" rx="6"/><path d="M22 34 L16 48 L22 62 M78 34 L84 48 L78 62"/></g></svg>`,
     flip:`<svg viewBox="0 0 100 100"><g ${sw}><rect x="22" y="56" width="56" height="22" rx="5"/><path d="M30 42 A26 26 0 0 1 72 34"/><path d="M64 24 L73 35 L60 40"/></g></svg>`,
     side:`<svg viewBox="0 0 100 100"><g ${sw}>${head(50,16)}<path d="M50 26 L50 62 M50 62 L44 90 M50 62 L56 90"/><path d="M50 34 L50 54"/><path d="M20 50 L36 50 M30 44 L36 50 L30 56 M80 50 L64 50 M70 44 L64 50 L70 56"/></g></svg>`,
-    hold:`<svg viewBox="0 0 100 100"><g ${sw}><circle cx="50" cy="50" r="34"/><path d="M50 30 L50 52 L64 60"/></g></svg>`,
+    hold:`<svg viewBox="0 0 100 100"><g ${sw}><path d="M30 18 L70 18 C70 34 58 40 59 52 C60 64 68 68 66 78 C64 84 36 84 34 78 C32 68 40 64 41 52 C42 40 30 34 30 18 Z"/><path d="M33 28 L67 28" stroke-width="3"/><path d="M18 88 Q50 96 82 88"/></g><path d="M33 30 L67 30 C65 40 57 44 58 52 C59 63 66 68 64 77 C62 81 38 81 36 77 C34 68 41 63 42 52 C43 44 35 40 33 30 Z" fill="currentColor" opacity=".35"/></svg>`,
   };
 })();

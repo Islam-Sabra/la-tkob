@@ -125,27 +125,31 @@ function makeRunner(spec, {strictFreeze=false}={}){
 
 /* ================= GAME 1: DON'T SPILL THE TEA ================= */
 const TEA_LEVELS = [
-  {id:"classic", classic:true, title:"Steady Hands", sub:"The original. Hold a full glass for 15 seconds without moving your feet.",
-   rules:["Hold the phone flat.","Breathe slowly. Watch the rim."], chars:[], partyOK:true,
-   script:[{c:"hold",sec:15,label:"Hold it steady"}], timeLimit:15},
-  {id:"diwaniya", title:"Abu Fahad's Tea", sub:"Carry the tea through the house to Abu Fahad and serve it on the low table.",
-   rules:["You'll walk about 7 steps and turn around: clear some space.","Squat slowly, the glass is full."],
-   chars:["abuFahad"], main:"abuFahad", mic:true, timeLimit:70,
-   script:[{c:"walk",n:4,label:"Walk 4 steps toward the diwaniya"},{c:"turn",label:"Turn around, he's behind you"},
-           {c:"walk",n:3,label:"Walk 3 steps to Abu Fahad"},{c:"down",label:"Squat to put the tea on the low table"},
+  {id:"t1", title:"Hold the Tea", new:{icon:"hold", title:"Hold it flat", text:"Keep the phone flat like a tray. Don't spill!"},
+   chars:[], script:[{c:"hold",sec:8,label:"Hold it steady"}], timeLimit:8, fill:-0.78, ease:0.6},
+  {id:"t2", title:"First Steps", new:{icon:"walk", title:"Walk", text:"Take real steps with the tea.", safety:true},
+   chars:[], script:[{c:"walk",n:3,label:"Walk 3 steps"}], timeLimit:30, fill:-0.78, ease:0.65},
+  {id:"t3", title:"Turn Around", new:{icon:"turn", title:"Turn around", text:"Spin all the way around. Slowly."},
+   chars:[], script:[{c:"turn",label:"Turn around"}], timeLimit:30, fill:-0.78, ease:0.7},
+  {id:"t4", title:"Low Table", new:{icon:"down", title:"Squat", text:"Bend your knees and go down. Then stand up."},
+   chars:[], script:[{c:"down",label:"Squat down"},{c:"up",label:"Stand back up"}], timeLimit:30, fill:-0.8, ease:0.75},
+  {id:"t5", title:"Freeze!", new:{icon:"freeze", title:"Freeze", text:"Stop moving completely until the bar fills."},
+   chars:[], script:[{c:"walk",n:2,label:"Walk 2 steps"},{c:"freeze",sec:2,label:"Freeze!"}], timeLimit:30, fill:-0.8, ease:0.8},
+  {id:"diwaniya", title:"Abu Fahad's Tea", chars:["abuFahad"], main:"abuFahad", mic:true, timeLimit:70, fill:-0.82, ease:0.9,
+   script:[{c:"walk",n:4,label:"Walk 4 steps"},{c:"turn",label:"Turn around"},
+           {c:"walk",n:3,label:"Walk 3 steps to Abu Fahad"},{c:"down",label:"Squat to the low table"},
            {c:"freeze",sec:2,label:"Hold still while he takes it"}]},
-  {id:"plane", title:"Turbulence at 30,000 ft", sub:"You're the flight attendant serving tea to a sleeping passenger while the plane shakes.",
-   rules:["When the seatbelt chime sounds, tilt against the shake.","Make noise and you wake the passenger: points lost."],
-   chars:["captain","passenger"], main:"passenger", mic:true, quietPenalty:6, turb:true, timeLimit:70,
-   script:[{c:"hold",sec:5,label:"Seatbelt sign is on. Hold steady"},{c:"walk",n:4,label:"Walk down the aisle"},
-           {c:"side",label:"Turn sideways to pass the trolley"},{c:"walk",n:2,label:"Two more steps"},
+  {id:"plane", title:"Turbulence", chars:["captain","passenger"], main:"passenger", mic:true, quietPenalty:6, turb:true, timeLimit:70,
+   new:{icon:"hold", title:"Turbulence", text:"When you hear the chime, the plane shakes. Tilt against it."},
+   script:[{c:"hold",sec:5,label:"Seatbelt sign on. Hold steady"},{c:"walk",n:4,label:"Walk down the aisle"},
+           {c:"side",label:"Turn sideways past the trolley"},{c:"walk",n:2,label:"Two more steps"},
            {c:"down",label:"Bend down to the passenger"},{c:"freeze",sec:2,label:"Freeze. Don't wake him"}]},
-  {id:"mama", title:"Mom's Dinner Party", sub:"Guests are watching. Aunt Noura keeps walking into you.",
-   rules:["No laughing or loud talking.","Your aunt will bump into you. Be ready."],
-   chars:["mama","khala"], main:"mama", mic:true, quietPenalty:8, timeLimit:70,
-   script:[{c:"walk",n:3,label:"Carry the tea into the living room"},{c:"freeze",sec:3,label:"Freeze! Aunt Noura is passing by",bump:true},
+  {id:"mama", title:"Mom's Dinner", chars:["mama","khala"], main:"mama", mic:true, quietPenalty:8, timeLimit:70,
+   script:[{c:"walk",n:3,label:"Carry the tea in"},{c:"freeze",sec:3,label:"Freeze! Aunt Noura is passing",bump:true},
            {c:"turn",label:"Turn to face the guests"},{c:"down",label:"Bend down to serve Grandma"},
-           {c:"up",label:"Stand back up slowly"},{c:"freeze",sec:2,label:"Hold still while Mom smiles"}]},
+           {c:"up",label:"Stand back up slowly"},{c:"freeze",sec:2,label:"Hold still"}]},
+  {id:"classic", classic:true, title:"Steady Hands", partyOK:true, chars:[],
+   script:[{c:"hold",sec:15,label:"Hold it steady"}], timeLimit:15},
 ];
 
 function teaGame(level, ui){
@@ -183,7 +187,7 @@ function teaGame(level, ui){
   }
   return {
     hasGlass:true, timer:"down",
-    begin(){ tea.reset(); next(); if(chars.length) setTimeout(()=>{ const c=chars.find(c=>CHARS[c].lines.intro); if(c) say("intro",c); },300); },
+    begin(){ tea.reset(); glass.st.level = level.fill||-0.86; tea.ease = level.ease||1; next(); if(chars.length) setTimeout(()=>{ const c=chars.find(c=>CHARS[c].lines.intro); if(c) say("intro",c); },300); },
     onEvent(type){
       if(g.over) return;
       g.runner && g.runner.onEvent(type);
@@ -231,15 +235,20 @@ function teaGame(level, ui){
 const SIMON_POOL = [
   {c:"walk",n:2},{c:"turn"},{c:"jump"},{c:"down"},{c:"up"},{c:"freeze",sec:2},{c:"shake"},{c:"side"},{c:"flip"},{c:"walk",n:3},{c:"jump"},{c:"shake"}
 ];
+const SIMON_EASY = [{c:"walk",n:2},{c:"turn"},{c:"down"},{c:"up"},{c:"freeze",sec:2},{c:"shake"}];
 const SIMON_LEVELS = [
-  {id:"classic", title:"Classic", sub:"Do it only when Simon says. 3 lives.", lives:3, partyOK:true},
-  {id:"speed", title:"Speed Round", sub:"Starts fast, gets faster. 1 life.", lives:1, fast:true},
+  {id:"s1", title:"Simon Basics", lives:3, target:5, noTraps:true, slow:true, pool:SIMON_EASY,
+   new:{icon:"jump", title:"Simon says", text:"Do each move as fast as you can.", safety:true}},
+  {id:"s2", title:"Don't Fall for It", lives:3, target:8, slow:true, pool:SIMON_EASY,
+   new:{icon:"freeze", title:"The trick", text:"No \"Simon says\"? Don't move at all."}},
+  {id:"classic", title:"Endless", lives:3, stars:[8,15,25], partyOK:true},
+  {id:"speed", title:"Speed Round", lives:1, fast:true, stars:[5,10,15]},
 ];
 function simonGame(level, ui){
   const S = Engine.S;
   const g = {lives:level.lives, score:0, phase:"gap", t:0, until:0.6, runner:null, simon:true, last:null, reason:"", moved:false, flipped:false};
   function winFor(spec){
-    const base = level.fast ? 3.2 : 4.6, min = level.fast ? 1.6 : 2.2;
+    const base = level.fast ? 3.2 : level.slow ? 5.6 : 4.6, min = level.fast ? 1.6 : level.slow ? 3.2 : 2.2;
     let w = Math.max(min, base - g.score*0.12);
     if(spec.c==="walk") w += spec.n*0.5;
     if(spec.c==="freeze") w = spec.sec + 1.2;
@@ -250,8 +259,9 @@ function simonGame(level, ui){
     let spec;
     if(g.flipped){ spec={c:"unflip"}; g.simon=true; }
     else {
-      do { spec = pick(SIMON_POOL); } while(g.last && spec.c===g.last.c);
-      g.simon = g.score<2 ? true : Math.random() < 0.72;
+      const pool = level.pool || SIMON_POOL;
+      do { spec = pick(pool); } while(g.last && spec.c===g.last.c);
+      g.simon = level.noTraps || g.score<2 ? true : Math.random() < 0.68;
       if(spec.c==="up" && S.level!=="low" && Math.random()<0.5) spec = {c:"down"};
     }
     g.last = spec;
@@ -273,10 +283,13 @@ function simonGame(level, ui){
     if(g.runner && g.runner.spec.c==="flip" && g.simon) g.flipped = true;
     if(g.runner && g.runner.spec.c==="unflip") g.flipped = false;
     g.phase="gap"; g.t=0; g.until= level.fast ? 0.6 : 0.9;
+    if(level.target && g.score>=level.target){ g.won=true; end(); }
   }
   function end(){
     if(g.over) return; g.over=true;
-    setTimeout(()=>ui.finish({kind:"simon", level, score:g.score, reason:g.reason}), 900);
+    const success = level.target ? !!g.won : g.score>=level.stars[0];
+    const stars = !success ? 0 : level.target ? Math.max(1,g.lives) : (g.score>=level.stars[2]?3:g.score>=level.stars[1]?2:1);
+    setTimeout(()=>ui.finish({kind:"simon", level, score:g.score, reason:g.won?"":g.reason, success, stars, lives:g.lives}), g.won?300:900);
   }
   const ACTIONS = ["jump","down","up","turn","shake","flip"];
   return {
@@ -321,9 +334,9 @@ const OBSTACLES = [
   {c:"walk",n:5,label:"Long hallway: walk 5 steps"},
 ];
 const WAITER_LEVELS = [
-  {id:"breakfast", title:"Breakfast Shift", sub:"5 obstacles. Learn the moves.", fixed:[0,1,4,5,0], par:40, partyOK:true},
-  {id:"lunch", title:"Lunch Rush", sub:"7 random obstacles, faster pace.", random:7, par:50},
-  {id:"wedding", title:"Wedding Party", sub:"10 obstacles and guests bumping into you.", random:10, par:70, bumps:true},
+  {id:"breakfast", title:"Breakfast Shift", fixed:[0,1,4,5,0], par:40, partyOK:true, new:{icon:"walk", title:"Tray of three", text:"Clear each obstacle fast. Every drop counts."}},
+  {id:"lunch", title:"Lunch Rush", random:7, par:50},
+  {id:"wedding", title:"Wedding Party", random:10, par:70, bumps:true, new:{icon:"shake", title:"Crowded room", text:"Guests will bump into you. Stay steady."}},
 ];
 function waiterGame(level, ui){
   const S = Engine.S;
@@ -373,10 +386,7 @@ function waiterGame(level, ui){
 }
 
 const GAMES = [
-  {id:"tea", title:"Don't Spill the Tea", tag:"Balance", desc:"Carry a full glass through real-life situations. Walk, turn and squat without spilling a drop.",
-   icon:"hold", levels:TEA_LEVELS, make:teaGame, scoreLabel:"Score"},
-  {id:"simon", title:"Simon Says", tag:"Reflexes", desc:"Jump, squat, spin, freeze. Only when Simon says! Your phone checks every move.",
-   icon:"jump", levels:SIMON_LEVELS, make:simonGame, scoreLabel:"Moves"},
-  {id:"waiter", title:"Waiter Rush", tag:"Speed + balance", desc:"A tray of three teas and an obstacle course. Duck, hop and squeeze through, fast.",
-   icon:"walk", levels:WAITER_LEVELS, make:waiterGame, scoreLabel:"Score"},
+  {id:"tea", title:"Don't Spill the Tea", icon:"hold", levels:TEA_LEVELS, make:teaGame},
+  {id:"simon", title:"Simon Says", icon:"jump", levels:SIMON_LEVELS, make:simonGame, unlockAfter:["tea","t5"]},
+  {id:"waiter", title:"Waiter Rush", icon:"walk", levels:WAITER_LEVELS, make:waiterGame, unlockAfter:["simon","s2"]},
 ];
